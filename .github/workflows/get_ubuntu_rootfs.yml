@@ -1,0 +1,32 @@
+name: Fetch Official Ubuntu WSL RootFS
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  get-rootfs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Ubuntu 22.04 WSL RootFS
+        run: |
+          # لینک مستقیم فایل rootfs اوبونتو 22.04 LTS (Jammy Jellyfish)
+          wget 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz' -O ubuntu-22.04-wsl-rootfs.tar.gz
+          ls -lh ubuntu-22.04-wsl-rootfs.tar.gz
+
+      - name: Split file into manageable chunks
+        run: |
+          mkdir -p ubuntu_rootfs_chunks
+          split -b 50M ubuntu-22.04-wsl-rootfs.tar.gz ubuntu_rootfs_chunks/rootfs_chunk_
+
+      - name: Commit and push chunks to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ubuntu_rootfs_chunks/
+          git commit -m "Add official Ubuntu 22.04 WSL rootfs chunks" || echo "No changes to commit"
+          git push
