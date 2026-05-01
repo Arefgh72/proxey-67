@@ -1,4 +1,3 @@
-name: Download WSL2 Kernel and Push to Repo (Reliable)
 name: Download WSL Installer and Create Release
 
 on: workflow_dispatch
