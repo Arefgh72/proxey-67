@@ -1,0 +1,37 @@
+name: Download .deb packages for WSL
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  get-debs:
+    runs-on: ubuntu-22.04   # هم‌نسخه با اوبونتوی 22.04 WSL
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download wireguard-tools, stun-client and dependencies
+        run: |
+          mkdir -p debs
+          cd debs
+          # به‌روزرسانی فهرست بسته‌ها در رانر (بدون نصب)
+          sudo apt update
+          # دانلود بسته‌های اصلی به همراه همهٔ وابستگی‌های گم‌شده
+          apt download wireguard-tools stun-client
+          # دریافت وابستگی‌های هر بسته و دانلود آنها (اگر در فهرست نباشند)
+          for pkg in wireguard-tools stun-client; do
+            apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances $pkg | \
+              grep "^\w" | sort -u | xargs apt download 2>/dev/null
+          done
+          echo "All .deb files downloaded:"
+          ls -l
+
+      - name: Commit and push debs folder
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add debs/
+          git commit -m "Add wireguard-tools, stun-client and dependencies" || echo "No changes"
+          git push
