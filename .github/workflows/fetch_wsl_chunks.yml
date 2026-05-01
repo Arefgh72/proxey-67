@@ -1,0 +1,41 @@
+name: Fetch WSL Installer as Chunks
+
+on: workflow_dispatch
+
+permissions:
+  contents: write  # برای push کردن تکه‌ها
+
+jobs:
+  chunk-wsl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest WSL release asset URL
+        id: get_release
+        run: |
+          # دریافت اطلاعات آخرین ریلیز از API گیت‌هاب (مخزن microsoft/WSL)
+          RELEASE_JSON=$(curl -s https://api.github.com/repos/microsoft/WSL/releases/latest)
+          ASSET_URL=$(echo $RELEASE_JSON | jq -r '.assets[] | select(.name | endswith(".msixbundle")) | .browser_download_url')
+          echo "Asset URL: $ASSET_URL"
+          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Download the MSIX bundle
+        run: |
+          curl -L --retry 5 --retry-delay 10 "${{ steps.get_release.outputs.asset_url }}" -o wsl.msixbundle
+          ls -lh wsl.msixbundle
+
+      - name: Split file into 50MB chunks
+        run: |
+          mkdir -p chunks
+          split -b 50M wsl.msixbundle chunks/wsl_chunk_
+          ls -lh chunks/
+
+      - name: Commit and push chunks
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add chunks/
+          git commit -m "Add WSL installer chunks" || echo "No changes"
+          git push
