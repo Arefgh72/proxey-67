@@ -1,8 +1,7 @@
-name: Download WSL2 Kernel and Push to Repo
+name: Download WSL2 Kernel and Push to Repo (Reliable)
 
 on: workflow_dispatch
 
-# اجازه‌ی نوشتن روی مخزن برای این workflow
 permissions:
   contents: write
 
@@ -13,15 +12,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download the MSI file from Microsoft
+      - name: Download MSI with retry and size check
         run: |
           mkdir -p downloads
-          wget https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi -O downloads/wsl_update_x64.msi
+          # تلاش برای دانلود تا ۵ بار، با قابلیت ادامه در صورت قطعی
+          curl -L -C - --retry 5 --retry-delay 10 \
+               "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" \
+               -o downloads/wsl_update_x64.msi
+          # نمایش اندازه فایل دانلود شده
+          ls -lh downloads/wsl_update_x64.msi
+          # بررسی حداقل حجم مورد انتظار (اینجا 40 مگ)
+          SIZE=$(stat -c %s downloads/wsl_update_x64.msi)
+          if [ $SIZE -lt 40000000 ]; then
+            echo "ERROR: Downloaded file is smaller than expected ($SIZE bytes). It might be incomplete."
+            exit 1
+          fi
 
-      - name: Commit and push the file to repository
+      - name: Commit and push file
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add downloads/wsl_update_x64.msi
-          git commit -m "Add WSL2 kernel update MSI" || echo "No changes to commit"
+          git commit -m "Add complete WSL2 kernel update MSI" || echo "Nothing to commit"
           git push
