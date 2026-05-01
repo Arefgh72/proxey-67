@@ -1,17 +1,27 @@
-name: Get WSL2 Kernel Update from Microsoft
+name: Download WSL2 Kernel and Push to Repo
 
 on: workflow_dispatch
 
+# اجازه‌ی نوشتن روی مخزن برای این workflow
+permissions:
+  contents: write
+
 jobs:
-  get-kernel:
+  commit-kernel:
     runs-on: ubuntu-latest
     steps:
-      - name: Download kernel update package
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download the MSI file from Microsoft
         run: |
-          wget https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
-      
-      - name: Upload MSI file as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wsl-kernel-update
-          path: wsl_update_x64.msi
+          mkdir -p downloads
+          wget https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi -O downloads/wsl_update_x64.msi
+
+      - name: Commit and push the file to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add downloads/wsl_update_x64.msi
+          git commit -m "Add WSL2 kernel update MSI" || echo "No changes to commit"
+          git push
