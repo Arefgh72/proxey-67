@@ -1,0 +1,17 @@
+name: Get WSL2 Kernel Update from Microsoft
+
+on: workflow_dispatch
+
+jobs:
+  get-kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download kernel update package
+        run: |
+          wget https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
+      
+      - name: Upload MSI file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wsl-kernel-update
+          path: wsl_update_x64.msi
