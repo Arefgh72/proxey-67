@@ -1,0 +1,19 @@
+name: Temporary Proxy Tunnel
+on:
+  workflow_dispatch:
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # محدودیت زمانی ۳۰ دقیقه
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup SSH Tunnel with Wush
+      uses: coder/wush-action@v1.0.0
+      with:
+        # این گزینه تونل را در پس‌زمینه اجرا می‌کند
+        args: 'ssh -L 1080:localhost:1080 -N'
+    - name: Keep Alive
+      run: |
+        echo "SOCKS5 proxy is ready on port 1080."
+        echo "Keep this job alive for 30 minutes."
+        sleep 1800 # 1800 ثانیه = 30 دقیقه
