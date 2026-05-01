@@ -12,12 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-          - name: Download Ubuntu 22.04 WSL RootFS
-            run: |
-              # لینک صحیح فایل rootfs اوبونتو 22.04
-              wget 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-rootfs.tar.gz' -O ubuntu-22.04-wsl-rootfs.tar.gz
-              ls -lh ubuntu-22.04-wsl-rootfs.tar.gz
-              
+      - name: Download Ubuntu 22.04 WSL RootFS
+        run: |
+          # لینک صحیح فایل ریشه اوبونتو 22.04 برای WSL2
+          wget 'https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-rootfs.tar.gz' -O ubuntu-22.04-wsl-rootfs.tar.gz
+          ls -lh ubuntu-22.04-wsl-rootfs.tar.gz
+
       - name: Split file into manageable chunks
         run: |
           mkdir -p ubuntu_rootfs_chunks
