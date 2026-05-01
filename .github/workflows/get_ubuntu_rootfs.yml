@@ -1,4 +1,4 @@
-name: Fetch Official Ubuntu WSL RootFS from GitHub
+name: Find and Fetch Ubuntu WSL RootFS
 
 on: workflow_dispatch
 
@@ -12,22 +12,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Ubuntu 22.04 WSL RootFS from ubuntu/WSL releases
+      - name: Find correct asset URL via GitHub API
+        id: find_asset
         run: |
-          # لینک مستقیم آخرین نسخه از Releaseهای رسمی اوبونتو در گیت‌هاب
-          wget 'https://github.com/ubuntu/WSL/releases/latest/download/ubuntu-jammy-wsl-amd64-rootfs.tar.gz' \
-               -O ubuntu-22.04-wsl-rootfs.tar.gz
+          # دریافت فهرست تمام Releaseهای مخزن ubuntu/WSL
+          RELEASES=$(curl -s https://api.github.com/repos/ubuntu/WSL/releases)
+          
+          # جستجوی اولین asset ای که نامش شامل "ubuntu-jammy-wsl-amd64-rootfs.tar.gz" باشد
+          ASSET_URL=$(echo "$RELEASES" | jq -r '.[].assets[] | select(.name | contains("ubuntu-jammy-wsl-amd64-rootfs.tar.gz")) | .browser_download_url' | head -n 1)
+          
+          if [ -z "$ASSET_URL" ]; then
+            echo "ERROR: Could not find the rootfs asset"
+            exit 1
+          fi
+          
+          echo "Found asset URL: $ASSET_URL"
+          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Download rootfs file
+        run: |
+          curl -L --retry 5 --retry-delay 10 \
+               "${{ steps.find_asset.outputs.asset_url }}" \
+               -o ubuntu-22.04-wsl-rootfs.tar.gz
           ls -lh ubuntu-22.04-wsl-rootfs.tar.gz
 
-      - name: Split file into manageable chunks
+      - name: Split file into chunks
         run: |
           mkdir -p ubuntu_rootfs_chunks
           split -b 50M ubuntu-22.04-wsl-rootfs.tar.gz ubuntu_rootfs_chunks/rootfs_chunk_
 
-      - name: Commit and push chunks to repository
+      - name: Commit and push chunks
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ubuntu_rootfs_chunks/
-          git commit -m "Add official Ubuntu WSL rootfs from GitHub release" || echo "No changes to commit"
+          git commit -m "Add Ubuntu 22.04 rootfs (auto-detected release)" || echo "No changes"
           git push
