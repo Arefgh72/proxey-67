@@ -1,4 +1,4 @@
-name: Find and Fetch Ubuntu WSL RootFS
+name: Fetch Ubuntu WSL RootFS (Correct URL)
 
 on: workflow_dispatch
 
@@ -12,28 +12,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find correct asset URL via GitHub API
-        id: find_asset
+      - name: Download Ubuntu 22.04 WSL RootFS
         run: |
-          # دریافت فهرست تمام Releaseهای مخزن ubuntu/WSL
-          RELEASES=$(curl -s https://api.github.com/repos/ubuntu/WSL/releases)
-          
-          # جستجوی اولین asset ای که نامش شامل "ubuntu-jammy-wsl-amd64-rootfs.tar.gz" باشد
-          ASSET_URL=$(echo "$RELEASES" | jq -r '.[].assets[] | select(.name | contains("ubuntu-jammy-wsl-amd64-rootfs.tar.gz")) | .browser_download_url' | head -n 1)
-          
-          if [ -z "$ASSET_URL" ]; then
-            echo "ERROR: Could not find the rootfs asset"
-            exit 1
-          fi
-          
-          echo "Found asset URL: $ASSET_URL"
-          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
-
-      - name: Download rootfs file
-        run: |
-          curl -L --retry 5 --retry-delay 10 \
-               "${{ steps.find_asset.outputs.asset_url }}" \
-               -o ubuntu-22.04-wsl-rootfs.tar.gz
+          wget 'https://cloud-images.ubuntu.com/wsl/releases/22.04/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz' \
+               -O ubuntu-22.04-wsl-rootfs.tar.gz
           ls -lh ubuntu-22.04-wsl-rootfs.tar.gz
 
       - name: Split file into chunks
@@ -46,5 +28,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ubuntu_rootfs_chunks/
-          git commit -m "Add Ubuntu 22.04 rootfs (auto-detected release)" || echo "No changes"
+          git commit -m "Add official Ubuntu 22.04 rootfs" || echo "No changes"
           git push
