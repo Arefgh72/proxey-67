@@ -1,0 +1,27 @@
+name: Download WSL2 Kernel and Push to Repo (Reliable)
+name: Download WSL Installer and Create Release
+
+on: workflow_dispatch
+
+permissions:
+  contents: write   # اجازه‌ی ایجاد Release
+
+jobs:
+  release-wsl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download WSL installer MSIX
+        run: |
+          curl -L --retry 5 --retry-delay 10 \
+               "https://wslstorestorage.blob.core.windows.net/wslblob/WSL_installer_x64.msix" \
+               -o WSL_installer_x64.msix
+
+      - name: Create Release and upload file
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: wsl-installer
+          name: "WSL Package for Manual Install"
+          body: "فایل نصبی WSL برای نصب در ویندوز. پس از دانلود، آن را اجرا کنید."
+          files: WSL_installer_x64.msix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
