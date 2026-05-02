@@ -1,0 +1,45 @@
+name: Download and Package a Website
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'آدرس کامل وبسایت برای دانلود (مثلاً https://example.com)'
+        required: true
+        default: 'https://sinavm.github.io/sinavm/'
+
+jobs:
+  download-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download website with wget
+        run: |
+          echo "در حال دانلود وبسایت از ${{ github.event.inputs.site_url }} ..."
+          # دستور wget برای دانلود کامل سایت، شامل فایل‌های ضروری، با عمق نامحدود
+          wget \
+            --mirror \
+            --page-requisites \
+            --adjust-extension \
+            --convert-links \
+            --no-parent \
+            --wait=1 \
+            --random-wait \
+            --limit-rate=500k \
+            --directory-prefix=./downloaded_site \
+            "${{ github.event.inputs.site_url }}"
+        shell: bash
+
+      - name: Package downloaded site into ZIP
+        run: |
+          echo "در حال فشرده‌سازی فایل‌های دانلود شده..."
+          zip -r site_download.zip ./downloaded_site/
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-website
+          path: site_download.zip
